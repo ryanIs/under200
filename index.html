@@ -1,0 +1,534 @@
+<title>Weight loss!! Segment 4</title>
+
+<!-- Styles -->
+<style>
+  #chartdiv {
+    width: 100%;
+    height: 500px;
+
+    font-size: 0.9em;
+    font-family: Arial;
+  }
+</style>
+
+<!-- Resources -->
+<script src="https://cdn.amcharts.com/lib/4/core.js"></script>
+<script src="https://cdn.amcharts.com/lib/4/charts.js"></script>
+<script src="https://cdn.amcharts.com/lib/4/themes/animated.js"></script>
+
+<!-- Chart code -->
+<script>
+  const APP_VERSION = '4.1.2'
+
+  const colorRanges = [
+    {
+      weightRange: [253, 256],
+      color: '#ff0'
+    },
+    {
+      weightRange: [250, 253],
+      color: '#dd0'
+    },
+
+    
+    {
+      weightRange: [247, 250],
+      color: '#dfd'
+    },
+    {
+      weightRange: [244, 247],
+      color: '#7dd'
+    },
+    
+    
+    {
+      weightRange: [241, 244],
+      color: '#5fa'
+    },
+    {
+      weightRange: [238, 241],
+      color: '#9f5'
+    },
+
+    {
+      weightRange: [235, 238],
+      color: '#5a0'
+    },
+    {
+      weightRange: [232, 235],
+      color: '#0f0'
+    },
+
+    {
+      weightRange: [229, 232],
+      color: '#33ddcc'
+    },
+    {
+      weightRange: [226, 229],
+      color: '#66ffcc'
+    },
+
+    {
+      weightRange: [223, 226],
+      color: '#0d0'
+    },
+    {
+      weightRange: [220, 223],
+      color: '#0f0'
+    },
+
+    {
+      weightRange: [217, 220],
+      color: '#dddd66'
+    },
+    {
+      weightRange: [214, 217],
+      color: '#ffff66'
+    },
+
+
+    {
+      weightRange: [211, 214],
+      color: '#ff9933'
+    },
+    {
+      weightRange: [208, 211],
+      color: '#ffb3b3'
+    },
+
+    {
+      weightRange: [205, 208],
+      color: '#aaa'
+    },
+    {
+      weightRange: [150, 205],
+      color: '#f2f2f2'
+    },
+  ]
+
+  let notes = {}
+
+  // Core function that parses the weight data into consumable JavaScript object
+  // After - we plug the data into amcharts4 to display (a beautiful downward bar chart).
+  const processTextFile = (txt) => {
+
+    // Split data into columns (DATE, WEIGHT float, NOTE)
+    let weightData = txt.split('[WEIGHT]')[1].split('[/WEIGHT]')[0].trim()
+    let returnString = weightData
+    // console.log(weightData)
+    weightData = weightData.split('\n')
+    weightData.shift()
+    weightData.shift()
+    // console.log(weightData)
+
+    myData = []
+
+    weightData = weightData.reverse()
+    let i = 0;
+
+    // Loop through each (valid) weight line and append neatly to myData object array.
+    for(line of weightData) {
+      line = line.trim()
+      let newDataObj = {}
+
+      let lineSplit = line.split('  ')
+
+      // Skip empty / incorrect lines.
+      if(lineSplit.length < 2) {
+        continue
+      }
+
+      // Destructure
+      let [date, weight, note] = lineSplit.filter((e) => e!="")
+
+      // Date column
+      if(date != null) {
+        date = date.trim()
+
+        var parts = date.split("-");
+        var dt = new Date(String("20" + parseInt(parts[2], 10)),
+                  parseInt(parts[1], 10) - 1,
+                  parseInt(parts[0], 10));
+
+        date = dt.toLocaleString('default', { day: 'numeric', month: 'short',})
+        let dateLong = dt.toLocaleString('default', { day: 'numeric', month: 'long',})
+
+        date = date.split(' ').reverse().join(' ')
+        dateLong = dateLong.split(' ').reverse().join(' ')
+
+        // date.replace('2020','')
+        newDataObj['date'] = date  + ' '  +  dt.getFullYear().toString().substr(-2)
+        newDataObj['dateLong'] = dateLong  + ' '  +  dt.getFullYear().toString().substr(-2)
+          
+          // console.log(newDataObj['date'])
+
+
+        newDataObj['dateObj'] = dt
+
+
+        // Add date distance from last recording
+        if(i > 0 && myData[i-1] != null && myData[i-1]['dateObj'] != null) {
+
+          let Difference_In_Time = myData[i-1]['dateObj'].getTime() - dt.getTime();
+  
+          // To calculate the no. of days between two dates
+          // Quest: some are showing up as weird floats
+          let Difference_In_Days = Difference_In_Time / (1000 * 3600 * 24);
+            // console.log(Difference_In_Days)
+            newDataObj['dateDistance'] = -Difference_In_Days
+
+        }
+
+      } // End date
+
+      // Weight column
+      if(weight != null) {
+        weight = parseFloat(weight.trim())
+        newDataObj['weight'] = weight
+        // console.log(weight)
+      } // End weight
+
+      // Note column
+      if(note != null) {
+        note = note.trim()
+
+        newDataObj['note'] = note
+        // notes[date] = note
+      } // End note
+
+      // Push to myData
+      myData.push(newDataObj)
+      i++
+
+    } // End weight lines loop
+
+
+    // Send data to amcharts4 to plot
+    plotData()
+    return returnString
+
+  }
+
+  // // Load data from text file
+  // window.addEventListener("load", function() {
+  //   // document.getElementsByTagName("html")[0].replaceChild(extern.getElementsByTagName("body")[0], document.getElementsByTagName("body")[0]);
+  //   // processTextFile(document.getElementById('personal-obj-link').import)
+  //   setTimeout(() => {
+  //     console.log(window.frames.messageTxt.document.body.lastChild.lastChild.data)
+  //   }, 1000);
+  // }, false);
+
+  // Format date
+  function formatDate(date) {
+    var d = new Date(date),
+        month = '' + (d.getMonth() + 1),
+        day = '' + d.getDate(),
+        year = d.getFullYear();
+
+    if (month.length < 2) 
+        month = '0' + month;
+    if (day.length < 2) 
+        day = '0' + day;
+
+    return [year, month, day].join('-');
+    // return [month, day].join('-');
+  }
+
+  // Create a new amcharts range when the month changes from the previous month.
+  const setLinesForEachNewMonth = (categoryAxis) => {
+
+    // let lastMonth = 'Jan'
+    let lastMonth = 'Sep'
+
+    // Create a new range when the month changes from the previous month.
+    for (let i = 0; i < myData.length; i++) {
+      const dataObj = myData[i];
+      let myDateStr = dataObj['date']
+      myDateStrArr = myDateStr.split(' ')
+
+      // console.log(lastMonth)
+      // console.log(myDateStrArr[1])
+
+      if(lastMonth != myDateStrArr[1]) {
+
+        let range = categoryAxis.axisRanges.create();
+        range.category = myDateStr;
+        // range.endCategory = "1 Feb 21";
+        range.axisFill.fill = am4core.color("#396478");
+        range.axisFill.fillOpacity = 0.3;
+        range.locations.category = 0.2;
+        range.locations.endCategory = 0.8;
+        range.label.text = '';
+
+        lastMonth = myDateStrArr[1]
+
+      }
+      
+      // Add a been_a_while marker (last distance was greater than a week) (shows red line)
+      if(myData[i]['dateDistance'] > 7) {
+
+        let range = categoryAxis.axisRanges.create();
+        range.category = myDateStr;
+        // range.endCategory = "1 Feb 21";
+        range.axisFill.fill = am4core.color("#700");
+        range.axisFill.fillOpacity = 0.5;
+        range.locations.category = 0.1;
+        range.locations.endCategory = 0.4;
+        range.label.text = '';
+
+
+        lastMonth = myDateStrArr[1]
+
+      }
+
+    }
+  }
+
+  // Plot the data. This is the core amcharts interfacing function
+  // am4core.ready(function() {
+  const plotData = () => {
+    
+    // var xhttp = new XMLHttpRequest();
+    // xhttp.onreadystatechange = function() {
+    //   if(this.readyState == 4)
+    //   if (this.status == 200 || this.status == 0) {
+    //     processTextFile(this.responseText)
+    //   }
+    // };
+    // // xhttp.open("GET", "Personal Obj.txt", false);
+    // xhttp.open("GET", "file:///C:/Main/Objectives/objectives/Personal Obj.txt", false);
+    // xhttp.send();
+
+    // Themes 
+    am4core.useTheme(am4themes_animated);
+
+    // Create chart instance
+    var chart = am4core.create("chartdiv", am4charts.XYChart);
+
+    // Add data
+    chart.data = myData;
+
+    // Create axes
+    var categoryAxis = chart.xAxes.push(new am4charts.CategoryAxis());
+    categoryAxis.dataFields.category = "date";
+    categoryAxis.renderer.grid.template.location = 0;
+    categoryAxis.renderer.minGridDistance = 30;
+    categoryAxis.renderer.labels.template.adapter.add("dy", function(dy, target) {
+      if (target.dataItem && target.dataItem.index & 2 == 2) {
+        return dy + 25;
+      }
+      return dy;
+    });
+
+    // Set lines for each month
+    setLinesForEachNewMonth(categoryAxis)
+
+    // Horizontal scroll bar properties
+    chart.scrollbarX = new am4core.Scrollbar();
+    chart.scrollbarX.parent = chart.bottomAxesContainer;
+    chart.scrollbarX.properties.dy = 10
+
+    // Main Y Axis (weight integer)
+    var valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
+    // valueAxis.min = 200
+    // valueAxis.min = 220 // acheived 
+    valueAxis.min = 200 // end of april goal!!! we got this!!
+    // valueAxis.min = 180 // End of all acheivements weight loss. nice!!!
+    // valueAxis.max = 250
+    valueAxis.max = 240
+
+    // Set custom y axis interval
+    // valueAxis.renderer.grid.template.disabled = true;
+    // valueAxis.renderer.labels.template.disabled = true;
+    // function createGrid(value, enabled=true) {
+    //   let range = valueAxis.axisRanges.create();
+    //   range.value = value;
+    //   range.label.text = "{value}";
+    //   if(!enabled)
+    //   range.label.text = "";
+    // }
+    // for(let i = 250; i < 320; i++) {
+    //   createGrid(i, (i%5 == 0))
+    // }
+
+    // Create series (X axis data: invidual day inputs)
+    var series = chart.series.push(new am4charts.ColumnSeries());
+    series.dataFields.valueY = "weight";
+    series.dataFields.categoryX = "date";
+    series.name = "Weight";
+    series.columns.template.tooltipHTML = `<span style='line-height: 24px; font-size: 1.4em;'>{dateLong}: <b>{valueY} lb</b><br/><br/>Days since last: <b>{dateDistance}</b><br/><br/>{note}</span>`;
+    // series.columns.template.tooltipHTML = `<span style='line-height: 24px; font-size: 1.4em;'>{dateLong}: <b>{valueY} lb</b><br/><br/>Days since last: <b>{dateDistance}</b><br/><br/></span>`;
+    // series.columns.template.tooltipText = `<span style='line-height: 20px; font-size: 1.2em;'>{categoryX}: [bold]{valueY}[/]\nNote: {note}</span>`;
+    series.columns.template.fillOpacity = .8;
+
+    // Wrap tooltip
+    series.tooltip.label.wrap = true
+    series.tooltip.label.width = 400
+    // series.tooltip.label.lineHeight = 5
+
+    // Change color based on value
+    series.columns.template.adapter.add("fill", function(fill, target) {
+      // if (target.dataItem && (target.dataItem.valueY > 269)) {
+      //   return am4core.color("#a55");
+      // }
+      // if (target.dataItem && (target.dataItem.valueY > 269)) {
+      //   return am4core.color("#a55");
+      // }
+
+      // Loop through our weight range colors (seen near top of file)
+      // and tell amcharts to associate y-axis values to these colors
+      for(fillObj of colorRanges) {
+        if(fillObj.color != null) {
+          if (target.dataItem && (target.dataItem.valueY >= fillObj.weightRange[0] && target.dataItem.valueY < fillObj.weightRange[1])) {
+            return am4core.color(fillObj.color);
+          }
+        }
+      }
+
+        return fill;
+    });
+    
+    // series.tooltipText = `[bold]YEAR {categoryX}[/]
+    // ----
+    // Cars: {cars}
+    // Motorcycles: {motorcycles}
+    // Bicycles: {bicycles}`;
+
+    // Other styling
+    var columnTemplate = series.columns.template;
+    columnTemplate.strokeWidth = 2;
+    columnTemplate.strokeOpacity = 1;
+
+  } // End plotData
+
+  // Update front-end textarea to contain the weight data loaded by user
+  function dispFile(contents) {
+    document.getElementById('contents').innerHTML = contents
+  }
+
+  // Dispatch a click event onto the "select file" <button> to have user load data
+  function clickElem(elem) {
+    // Thank you - user1601638 on Stack Overflow (https://stackoverflow.com/questions/13405129/javascript-create-and-save-file )
+    var eventMouse = document.createEvent("MouseEvents")
+    eventMouse.initMouseEvent("click", true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null)
+    elem.dispatchEvent(eventMouse)
+  }
+
+  // Option B: Fetch latest WEIGHT contents from back-end.
+  async function fromBackend(func) {
+    const BACKEND_URL = "http://127.0.0.1:8001/weightdata"
+    const method = "GET"
+    const myResponse = await fetch(BACKEND_URL)
+
+    if(myResponse.ok == false) {
+      throw new Error(`fromBackend() fetch() error: ${myResponse.status}`)
+    }
+
+    const outputData = await myResponse.json()
+
+    console.log(outputData)
+
+    // Render data
+    contents = processTextFile(outputData)
+    doRender(contents, func)
+  }
+
+  // Option A: Get contents of primary WEIGHT.TXT file from user. Populate input textarea and initialize amcharts4.
+  function openFile(func) {
+    doRender(null, func)
+  }
+
+  // Renders front-end with processed weight data
+  function doRender(processedWeightData, func = () => {}) {
+    let readFile = function() {}
+    
+    // If back-end didn't provide weight data, ask user for it (basic GUI open file pop-up)
+    if(processedWeightData == null) {
+      readFile = function(e) {
+        var file = e.target.files[0];
+        if (!file) {
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          var contents = e.target.result;
+          // Render data
+          contents = processTextFile(contents)
+          
+          processedWeightData = contents
+          displayFrontendUI()
+        }
+        reader.readAsText(file)
+      }
+    }
+
+    // JS variable/function Hoisting <3
+    const displayFrontendUI = () => {
+      fileInput.func(processedWeightData)
+      document.body.removeChild(document.getElementById('hide-this'))
+      document.body.removeChild(fileInput)
+    }
+
+    // Create input field
+    fileInput = document.createElement("input")
+    fileInput.type = 'file'
+    fileInput.style.display = 'none'
+    fileInput.onchange = readFile
+    fileInput.func = func
+    document.body.appendChild(fileInput)
+
+    // weight data was empty when we got here so ask user for it
+    if(readFile.length > 0) { // Nice - JS Function.length() returns num of args; use this as boolean for clickElem
+      clickElem(fileInput)
+    }
+
+    // Back-end provided weight data so displayUI
+    else {
+      displayFrontendUI()
+    }
+
+  }
+
+  // Copy str to clipboard (nice DOM hack to quickly add and utilize <textarea>)
+  const copyToClipboard = str => {
+    const el = document.createElement('textarea');
+    el.value = str;
+    document.body.appendChild(el);
+    // document.getElementById('exercise-txt-area').appendChild(el)
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+  };
+
+  // EXERCISE_FILE is the path to the file. Replace this with the path on your machine.
+  var EXERCISE_FILE = String.raw`C:\Users\Forloop\Desktop\weight-amcharts4\PASTE_WEIGHT.txt`
+  // var EXERCISE_FILE = 'D:\\Main\\Objectives\\objectives\\Personal Obj.txt'
+
+</script>
+
+<!-- Styles -->
+<style type="text/css">
+  textarea
+  {  
+    width: 100%;
+    height: 100%;
+    border-color: Transparent;     
+  }
+</style>
+
+<!-- HTML -->
+<div id="hide-this">
+  <button onclick="copyToClipboard(EXERCISE_FILE); fromBackend(dispFile)"> or: pull from back-end</button>
+  <button style="width:100%; height:90%;" title="This will copy the Personal Obj.txt to your clipboard. Plot here" onclick="copyToClipboard(EXERCISE_FILE); openFile(dispFile)">Open a file (this will copy PASTE_WEIGHT.TXT path to your clipboard)</button>
+</div>
+
+<div id="chartdiv" style="height: 800px;"></div>
+
+<textarea id="contents" style="width: 1200px; height: 1000px;"></textarea>
+
+<!-- <div>
+  <h2>Segment 3</h2>
+  <img src="seg.png" title="Previous segment!" />
+</div> -->
+
+<!-- <div id="exercise-txt-area"></div> -->
