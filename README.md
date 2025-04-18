@@ -6,7 +6,7 @@ under200 is a simple weight-loss tracking application I built to track my journe
 
 Feel free to plug in your own data and watch the numbers fly down over the course of your journey (You may use the simple method of updating the PASTE_WEIGHT.TXT, or update/improve the backend to pull from a DB or somewhere else (objective))
 
-- [ ] Future me: update this checkbox if this repo is true. Don't let it bounce back up after accomplishing the goal!
+- [x] Future me: update this checkbox if this repo is true. Don't let it bounce back up after accomplishing the goal!
 
 # Install and run:
 
